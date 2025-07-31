@@ -5,6 +5,6 @@ from IdentityManager import views as identity_views
 urlpatterns = [
     path(
         "identify",
-        identity_views.IdentityIdentifyViewset.as_view({"post": "create"}),
+        identity_views.IdentityIdentifyViewset.as_view({"post": "identify"}),
     ),
 ]

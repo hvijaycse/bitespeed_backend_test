@@ -20,7 +20,7 @@ class IdentityIdentifyViewset(viewsets.ViewSet):
         },
     )
     @action(methods=["POST"], detail=False)
-    def create(self, request: Request, *args, **kweargs):
+    def identify(self, request: Request, *args, **kweargs):
 
         request_data = request.data
 
