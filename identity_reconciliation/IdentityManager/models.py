@@ -18,7 +18,7 @@ class Identities(models.Model):
         blank=True,
     )
     linkPrecedence = models.CharField(
-        choices=IndentityChoices.KLinkPrecedence.choices, max_length=10
+        choices=IndentityChoices.LinkPrecedence.choices, max_length=10
     )
     createdAt = models.DateTimeField(auto_now=True)
     updatedAt = models.DateTimeField(auto_now_add=True)
