@@ -26,9 +26,6 @@ def handle_identity_contacts(
 
 
     """
-    if email is None and phoneNumber is None:
-        # In case both are None nothing can be done.
-        return None
 
     # Finding all the Identities where the email and phoneNumber is mathcing
     # with the provide details.
@@ -36,10 +33,7 @@ def handle_identity_contacts(
         Q(email=email) | Q(phoneNumber=phoneNumber)
     ).order_by("createdAt")
 
-    # Getting the first entry which is also primary identity
-    primary_identity = related_identities.first()
-
-    if primary_identity is None:
+    if not related_identities.exists():
         # This mean there exists no entry by this email and phoneNumber
         # So we must create a new entry in db for this.
         current_identity = identity_models.Identities.objects.create(
@@ -50,25 +44,51 @@ def handle_identity_contacts(
 
         return current_identity
 
-    # There already exists some entries with the provided
-    # email and phoneNumber, the first one in this will be
-    # set as the primary contact, and the remaining one as
-    # secondary and set their as linkedId primary_identity id.
+    # Getting the primary identities
+    primary_identities = related_identities.filter(
+        linkPrecedence=identity_choices.LinkPrecedence.PRIMARY
+    )
 
+    if primary_identities.exists():
+        # There exists atleast one primary identity in the search
+        # space, this is out main primary instance.
+        primary_identity = primary_identities.first()
+    else:
+        # There exists no primary identity in the search
+        # space, so we select the first seconday identity,
+        # then we get the primary identity from it.
+        secondary_identity = related_identities.first()
+        primary_identity = secondary_identity.linkedId
+
+    # There already exists some entries with the provided
+    # email and phoneNumber, the oldest primary one  will be
+    # kept as the primary contact, and the remaining one as
+    # secondary and set their as linkedId primary_identity id.
     secondary_identites = related_identities.exclude(id=primary_identity.id)
 
     secondary_identites.update(
-        linkedId=primary_identity.id,
+        linkedId=primary_identity,
         linkPrecedence=identity_choices.LinkPrecedence.SECONDARY,
     )
 
-    # Last check is wheter their exists any entry with the provided.
-    # email and PhoneNumber, if it does not exists than create one
-    current_identity = identity_models.Identities.objects.filter(
-        email=email, phoneNumber=phoneNumber
-    ).first()
+    # Now with the provided details, if phone Number or
+    # email is None then we don't need to create new entry
+    # in the database as there is no new data.
+    if phoneNumber is None or email is None:
+        return primary_identity
 
-    if current_identity is None and phoneNumber is not None and email is not None:
+    # Last check is wether both email and PhoneNumber exists in the database
+    #  if even one of them does not exists we create a new entry.
+    email_does_not_exists = not identity_models.Identities.objects.filter(
+        email=email
+    ).exists()
+    phoneNumber_does_not_exists = not identity_models.Identities.objects.filter(
+        phoneNumber=phoneNumber
+    ).exists()
+
+    if email_does_not_exists or phoneNumber_does_not_exists:
+        # Either the email or phoneNumber does not exists
+        # in the database.
         current_identity = identity_models.Identities.objects.create(
             phoneNumber=phoneNumber,
             email=email,

@@ -31,10 +31,11 @@ class IdentityContactSerailizer(serializers.ModelSerializer):
         linked_identites = Identities.objects.filter(linkedId=instance.id)
         emails = [instance.email] + list(
             linked_identites.exclude(email=None)
+            .exclude(email=instance.email)
             .values_list("email", flat=True)
             .distinct()
         )
-        return set(emails)
+        return emails
 
     @swagger_serializer_method(
         serializer_or_field=serializers.ListSerializer(child=serializers.CharField())
@@ -43,10 +44,11 @@ class IdentityContactSerailizer(serializers.ModelSerializer):
         linked_identites = Identities.objects.filter(linkedId=instance.id)
         phone_numbers = [instance.phoneNumber] + list(
             linked_identites.exclude(phoneNumber=None)
+            .exclude(phoneNumber=instance.phoneNumber)
             .values_list("phoneNumber", flat=True)
             .distinct()
         )
-        return set(phone_numbers)
+        return phone_numbers
 
     @swagger_serializer_method(
         serializer_or_field=serializers.ListSerializer(child=serializers.IntegerField())
