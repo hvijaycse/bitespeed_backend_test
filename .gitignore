@@ -1,3 +1,4 @@
 identity_reconciliation/.env
 .vscode/
 __pycache__/
+staticfiles
