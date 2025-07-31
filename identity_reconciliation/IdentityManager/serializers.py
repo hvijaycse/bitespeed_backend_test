@@ -30,7 +30,9 @@ class IdentityContactSerailizer(serializers.ModelSerializer):
     def get_emails(self, instance: Identities):
         linked_identites = Identities.objects.filter(linkedId=instance.id)
         emails = [instance.email] + list(
-            linked_identites.values_list("email", flat=True).distinct()
+            linked_identites.exclude(email=None)
+            .values_list("email", flat=True)
+            .distinct()
         )
         return set(emails)
 
@@ -40,7 +42,9 @@ class IdentityContactSerailizer(serializers.ModelSerializer):
     def get_phoneNumbers(self, instance: Identities):
         linked_identites = Identities.objects.filter(linkedId=instance.id)
         phone_numbers = [instance.phoneNumber] + list(
-            linked_identites.values_list("phoneNumber", flat=True).distinct()
+            linked_identites.exclude(phoneNumber=None)
+            .values_list("phoneNumber", flat=True)
+            .distinct()
         )
         return set(phone_numbers)
 
