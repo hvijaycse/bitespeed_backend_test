@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from IdentityManager.models import Identities
 from rest_framework.fields import empty
+from drf_yasg.utils import swagger_serializer_method
 
 
 class IdentitySerializer(serializers.ModelSerializer):
@@ -23,30 +24,46 @@ class IdentityContactSerailizer(serializers.ModelSerializer):
     def get_primaryContatctId(self, instance: Identities):
         return instance.id
 
+    @swagger_serializer_method(
+        serializer_or_field=serializers.ListSerializer(child=serializers.EmailField())
+    )
     def get_emails(self, instance: Identities):
         linked_identites = Identities.objects.filter(linkedId=instance.id)
-        emails = instance.email + list(linked_identites.values_list("email", flat=True))
-        return emails
+        emails = [instance.email] + list(
+            linked_identites.values_list("email", flat=True).distinct()
+        )
+        return set(emails)
 
+    @swagger_serializer_method(
+        serializer_or_field=serializers.ListSerializer(child=serializers.CharField())
+    )
     def get_phoneNumbers(self, instance: Identities):
         linked_identites = Identities.objects.filter(linkedId=instance.id)
-        phone_numbers = instance.phoneNumber + list(
-            linked_identites.values_list("phoneNumber", flat=True)
+        phone_numbers = [instance.phoneNumber] + list(
+            linked_identites.values_list("phoneNumber", flat=True).distinct()
         )
-        return phone_numbers
+        return set(phone_numbers)
 
+    @swagger_serializer_method(
+        serializer_or_field=serializers.ListSerializer(child=serializers.IntegerField())
+    )
     def get_secondaryContactIds(self, instance: Identities):
         linked_identites = Identities.objects.filter(linkedId=instance.id)
-        return linked_identites.values_list("id", flat=True)
+        return linked_identites.values_list("id", flat=True).distinct()
 
 
 class IdentityContactResponseSerailizer(serializers.ModelSerializer):
 
-    contact = IdentityContactSerailizer()
+    contact = serializers.SerializerMethodField()
 
     class Meta:
         model = Identities
         fields = ("contact",)
+
+    @swagger_serializer_method(serializer_or_field=IdentityContactSerailizer)
+    def get_contact(self, instance):
+        contact_serailizer = IdentityContactSerailizer(instance=instance)
+        return contact_serailizer.data
 
 
 class IdentityRequestSerializer(serializers.Serializer):
